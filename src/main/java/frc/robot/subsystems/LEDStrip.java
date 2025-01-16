@@ -4,149 +4,91 @@
 
 package frc.robot.subsystems;
 
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.FunctionalCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.util.sendable.SendableBuilder;
+
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.Second;
+import static edu.wpi.first.units.Units.Seconds;
+
+import edu.wpi.first.units.Measure;
+import edu.wpi.first.units.measure.Distance;
+//import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
-import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.AddressableLEDBufferView;
+import edu.wpi.first.wpilibj.LEDPattern;
 import edu.wpi.first.wpilibj.util.Color;
 
 public class LEDStrip extends SubsystemBase {
-  public enum MotionType {
-    kNoMotion,
-    kRotateOut,
-    kRotateIn
-  }
   private AddressableLED m_ledStrip;
   private AddressableLEDBuffer m_ledBuffer;
-  private MotionType m_motionType = MotionType.kNoMotion;
-  private double m_delay = 0.1;
-  private Timer m_timer; 
+  private AddressableLEDBufferView m_bottom;
+  private AddressableLEDBufferView m_top;
+  private LEDPattern m_gradient = LEDPattern.gradient(LEDPattern.GradientType.kDiscontinuous, Color.kRed, Color.kYellow);
+  private Distance m_ledSpacing = Inches.of(3.0 / 9.0);
+  private LEDPattern m_scrollingGradient = m_gradient.scrollAtAbsoluteSpeed(Inches.per(Second).of(2.0), m_ledSpacing);
+
+  private LEDPattern m_allOff = LEDPattern.solid(Color.kBlack);
+  private LEDPattern m_allBlue = LEDPattern.solid(Color.kBlue);
+
+  private boolean m_doScroll = false;
+
   /** Creates a new LEDStrip. */
   public LEDStrip(int pwmPort, int length) {
     m_ledStrip = new AddressableLED(pwmPort);
     m_ledStrip.setLength(length);
     m_ledBuffer = new AddressableLEDBuffer(length);
-    m_timer = new Timer();
-    turnAllOff();
-    start();
-  }
-  @Override
-  public void initSendable(SendableBuilder builder) {
-    super.initSendable(builder);
-    builder.addDoubleProperty("Blink Timer", () -> m_timer.get(), null);
-  }
-  /**
-   * Turn on the lights
-   */
-  public void start(){
+    m_bottom = m_ledBuffer.createView(0, length/2-1);
+    m_top = m_ledBuffer.createView(length/2, length-1).reversed();
+    //m_gradient.breathe(Seconds.of(1)).applyTo(m_top);
+    //m_gradient.breathe(Seconds.of(1)).applyTo(m_bottom);
+    //Distance ledSpacing = Inches.of(3.0 / 9.0);
+    // LEDPattern pattern = base.scrollAtRelativeSpeed(Percent.per(Second).of(25));
     m_ledStrip.start();
-    m_timer.reset();
-    m_timer.start();
-  }
-  /**
-   * Turn off the lights?  Or just stop the motion?
-   */
-  public void stop(){
-    turnAllOff();
-    m_timer.reset();
-    // m_ledStrip.stop();
-  }
-  /**
-   * send data in buffer to strip
-   */
-  private void setData(){
+    m_allBlue.applyTo(m_ledBuffer);
     m_ledStrip.setData(m_ledBuffer);
+    //setDefaultCommand(scrollFromCenter());
+    setDefaultCommand(breath());
+    System.out.println("Started LEDStrip: length=" + length + ", pwmPort=" + pwmPort);
   }
+
+  //@Override
+  //public void initSendable(SendableBuilder builder) {
+  //  super.initSendable(builder);
+  //  builder.addDoubleProperty("Blink Timer", () -> m_timer.get(), null);
+  //}
+  
   /**
    * set all leds to dark.
    */
   public void turnAllOff(){
-    for(int i = 0 ; i < m_ledBuffer.getLength() ; i++) {
-      m_ledBuffer.setRGB(i, 0, 0, 0);
-    }
-    setData();
+    m_allOff.applyTo(m_ledBuffer);
+    m_ledStrip.setData(m_ledBuffer);
   }
-  /**
-   * @param colors: A sequence of colors.  This sequence will be repeated to the length of the led strip,
-   *                so it looks nicest if the number of colors evenly divides the length of the strip.
-   */
-  public void setRepeatingColorPattern(Color... colors){
-     for(int i = 0 ; i < m_ledBuffer.getLength() ; i++){
-      Color color = colors[i % colors.length];
-      m_ledBuffer.setLED(i, color);
-    }
-    setData();
-  }
-  /**
-   * @param colors: a sequence of colors to place at the start of the strip.  If the sequence is shorter
-   * than the strip then the remaining leds on the strip will be turned off; if longer the extra color
-   * entries will be ignored.
-   */
-  public void setColors(Color... colors){
-    turnAllOff();
-    int i = 0;
-    for(Color color: colors){
-      if (i < m_ledBuffer.getLength()){
-        m_ledBuffer.setLED(i, color);
-      } else {
-        break;
-      }
-      i++;
-    }
-    setData();
-  }
-  /**
-   * Rotate colors outward (away from the wired end of the strip).  Last color on strip will be copied to first.
-   */
-  public void movePatternOut(){
-    Color previousColor = m_ledBuffer.getLED(0);
-    for(int i = 1 ; i < m_ledBuffer.getLength() ; i++){
-      Color currentColor = m_ledBuffer.getLED(i);
-      m_ledBuffer.setLED(i, previousColor);
-      previousColor = currentColor;
-    }
-    m_ledBuffer.setLED(0, previousColor);
-    setData();
-  }
-  /**
-   * Rotate colors inward (towards wired end of the strip).  First color on strip will be copied to the last.
-   */
-  public void movePatternIn(){
-    Color nextColor = m_ledBuffer.getLED(m_ledBuffer.getLength()-1);
-    for(int i = m_ledBuffer.getLength() - 2; i >= 0 ; i--){
-      Color currentColor = m_ledBuffer.getLED(i);
-      m_ledBuffer.setLED(i, nextColor);
-      nextColor = currentColor;
-    }
-    m_ledBuffer.setLED(m_ledBuffer.getLength()-1, nextColor);
-    setData();
-  }
-
-  public void setDelay(double delay){
-    m_delay = delay;
-  }
-  public void setMotionType(MotionType motionType){
-    m_motionType = motionType;
-  }
-
+ 
+  
   @Override
-  public void periodic() {
-    // This method will be called once per scheduler run
-    if (!m_motionType.equals(MotionType.kNoMotion) && m_timer.get() >= m_delay) {
-      m_timer.reset();
-      m_timer.start();
-      switch(m_motionType){
-        case kNoMotion:
-          // do nothing
-          break;
-        case kRotateIn:
-          movePatternIn();
-          break;
-        case kRotateOut:
-          movePatternOut();
-          break;
-      }
-    }
+  public void periodic() {}
+
+  public Command scrollFromCenter() {
+    return new RunCommand(() ->
+      {
+        m_scrollingGradient.reversed().applyTo(m_bottom);
+        m_scrollingGradient.reversed().applyTo(m_top);
+        m_ledStrip.setData(m_ledBuffer);
+      },
+      this
+    );
+  }
+  public Command breath(){
+    return new RunCommand(() ->
+    {
+      m_allBlue.breathe(Seconds.of(1.0)).applyTo(m_ledBuffer);
+      m_ledStrip.setData(m_ledBuffer);
+    },
+    this);
   }
 }

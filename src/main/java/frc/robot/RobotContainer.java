@@ -9,16 +9,14 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.util.Color;
-import frc.robot.commands.BlinkLED;
-import frc.robot.commands.ChaseLED;
+
 import frc.robot.commands.DefaultTeleop;
 import frc.robot.commands.GoStraight;
 import frc.robot.commands.GoToApriltag;
 import frc.robot.commands.RumbleController;
 import frc.robot.commands.SetForwardToTowardsFront;
 import frc.robot.commands.Spin;
-import frc.robot.commands.XmasPattern;
+
 import frc.robot.subsystems.ControllerRumbler;
 import frc.robot.subsystems.DriveTrain;
 import frc.robot.subsystems.LEDStrip;
@@ -39,7 +37,7 @@ public class RobotContainer {
   private final XboxController m_controller = new XboxController(0);
   private final ControllerRumbler m_rumbler = new ControllerRumbler(m_controller);
   private final DriveTrain m_driveTrain = new DriveTrain();
-  private final LEDStrip m_ledStrip = new LEDStrip(0, 60);
+  private final LEDStrip m_ledStrip = new LEDStrip(9, 10);
   private final ApriltagInfo m_apriltagInfo = new ApriltagInfo(4173, "rPi", new int[]{1, 2, 3, 4, 5, 6, 7, 8});
   private final BrushlessSparkMax m_BrushlessSparkMax = new BrushlessSparkMax(58);
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
@@ -87,27 +85,6 @@ public class RobotContainer {
       new GoToApriltag(1, m_driveTrain, m_apriltagInfo)
       .andThen(new RumbleController(m_rumbler, 0.5, 0.5))
       );
-    // 'X' toggles blinking of LEDs
-    JoystickButton xButton = new JoystickButton(m_controller, XboxController.Button.kX.value);
-    xButton.toggleOnTrue(new BlinkLED(m_ledStrip,
-      new double[]{0.5, 0.25},
-      new Color[][]{
-        new Color[]{ Color.kBlue, Color.kBlue, Color.kBlue, Color.kYellow},
-        new Color[]{ Color.kRed, Color.kGreen, Color.kGreen}}));
-    new Trigger(() -> m_controller.getPOV() == 180).toggleOnTrue(new ChaseLED(m_ledStrip,
-      0.1,
-      ChaseLED.Direction.kOut, 
-      new Color[]{ Color.kViolet, Color.kBlueViolet, Color.kBlue, Color.kAqua,
-        Color.kGreen, Color.kYellowGreen, Color.kYellow, Color.kWhite})
-      );
-    // right 'bumper' toggles Xmas lights
-    // (We've run out of buttons on the Xbox controller - the 
-    // drive train's default command uses the buttons to do
-    // slow rotations.)
-    JoystickButton xmasTriggerOut = new JoystickButton(m_controller, XboxController.Button.kRightBumper.value);
-    xmasTriggerOut.whileTrue(new XmasPattern(m_ledStrip, 0.125, LEDStrip.MotionType.kRotateOut)); 
-    JoystickButton xmasTriggerIn = new JoystickButton(m_controller, XboxController.Button.kLeftBumper.value);
-    xmasTriggerIn.whileTrue(new XmasPattern(m_ledStrip, 0.125, LEDStrip.MotionType.kRotateIn )); 
   } 
 
   /**

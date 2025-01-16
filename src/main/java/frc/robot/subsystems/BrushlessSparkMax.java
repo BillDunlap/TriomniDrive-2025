@@ -25,9 +25,9 @@ public class BrushlessSparkMax extends SubsystemBase {
       .idleMode(IdleMode.kBrake)
       .smartCurrentLimit(50);
     REVLibError error = m_SparkMax.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-    //if (!error.equals(REVLibError.kOk)) {
+    if (!error.equals(REVLibError.kOk)) {
       DataLogManager.log("Error configuring SparkMax " + canId + ": " + error);
-    //}
+    }
     m_SparkMax.set(+0.15);
   }
 

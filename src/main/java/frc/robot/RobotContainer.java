@@ -6,6 +6,7 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Second;
+import static edu.wpi.first.units.Units.Seconds;
 
 import java.util.Map;
 
@@ -43,8 +44,17 @@ public class RobotContainer {
   private final ControllerRumbler m_rumbler = new ControllerRumbler(m_controller);
   private final DriveTrain m_driveTrain = new DriveTrain();
   private final LEDStrip m_ledStrip = new LEDStrip(9, 10);
+  //private final LEDStrip.Writer m_ledWriterAll = m_ledStrip.new Writer();
+  private final LEDStrip.Writer m_ledWriter_4_and_9 = m_ledStrip.new Writer(
+    new LEDStrip.ViewDatum(4, 4, false),
+    new LEDStrip.ViewDatum(9, 9, false)
+  );
+  private final LEDStrip.Writer m_ledWriter_not_4_or_9 = m_ledStrip.new Writer(
+    new LEDStrip.ViewDatum(0, 3, false), 
+    new LEDStrip.ViewDatum(5, 8, true)
+  );
   private final ApriltagInfo m_apriltagInfo = new ApriltagInfo(4173, "rPi", new int[]{1, 2, 3, 4, 5, 6, 7, 8});
-  private final BrushlessSparkMax m_BrushlessSparkMax = new BrushlessSparkMax(58);
+  // private final BrushlessSparkMax m_BrushlessSparkMax = new BrushlessSparkMax(58);
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     m_driveTrain.setName("The Drive Train");
@@ -91,19 +101,11 @@ public class RobotContainer {
       .andThen(new RumbleController(m_rumbler, 0.5, 0.5))
       );
 
-    new Trigger(() -> m_controller.getPOV() == 180).whileTrue(
-      m_ledStrip.scrollSteps(
-        Map.of(0.0, Color.kRed, 0.2, Color.kYellow),
-        Inches.per(Second).of(1.0))
-      );
-    new Trigger(() -> m_controller.getPOV() == 90).whileTrue(
-      m_ledStrip.breath()
-    );
-    new Trigger(() -> m_controller.getPOV() == 270).whileTrue(
-      m_ledStrip.scrollFromCenter()
-    );
-
-
+    new Trigger(() -> m_controller.getXButton()).whileTrue(
+      m_ledWriter_not_4_or_9.scrollSteps(
+        Map.of(0.0, Color.kRed, 0.26, Color.kGreen), Inches.per(Second).of(1.0)));
+    new Trigger(() -> m_controller.getYButton()).whileTrue(
+      m_ledWriter_4_and_9.breathe(Color.kBrown, Seconds.of(2)));
   } 
 
   /**

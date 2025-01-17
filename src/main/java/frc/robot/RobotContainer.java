@@ -4,12 +4,17 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.Second;
+
+import java.util.Map;
+
 import edu.wpi.first.wpilibj.GenericHID;// HID stands for Human interface device.
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
+import edu.wpi.first.wpilibj.util.Color;
 import frc.robot.commands.DefaultTeleop;
 import frc.robot.commands.GoStraight;
 import frc.robot.commands.GoToApriltag;
@@ -85,6 +90,20 @@ public class RobotContainer {
       new GoToApriltag(1, m_driveTrain, m_apriltagInfo)
       .andThen(new RumbleController(m_rumbler, 0.5, 0.5))
       );
+
+    new Trigger(() -> m_controller.getPOV() == 180).whileTrue(
+      m_ledStrip.scrollSteps(
+        Map.of(0.0, Color.kRed, 0.2, Color.kYellow),
+        Inches.per(Second).of(1.0))
+      );
+    new Trigger(() -> m_controller.getPOV() == 90).whileTrue(
+      m_ledStrip.breath()
+    );
+    new Trigger(() -> m_controller.getPOV() == 270).whileTrue(
+      m_ledStrip.scrollFromCenter()
+    );
+
+
   } 
 
   /**

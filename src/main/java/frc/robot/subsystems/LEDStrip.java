@@ -5,7 +5,7 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.FunctionalCommand;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -13,8 +13,10 @@ import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Seconds;
 
-import edu.wpi.first.units.Measure;
+import java.util.Map;
+
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.LinearVelocity;
 //import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
@@ -31,10 +33,7 @@ public class LEDStrip extends SubsystemBase {
   private Distance m_ledSpacing = Inches.of(3.0 / 9.0);
   private LEDPattern m_scrollingGradient = m_gradient.scrollAtAbsoluteSpeed(Inches.per(Second).of(2.0), m_ledSpacing);
 
-  private LEDPattern m_allOff = LEDPattern.solid(Color.kBlack);
   private LEDPattern m_allBlue = LEDPattern.solid(Color.kBlue);
-
-  private boolean m_doScroll = false;
 
   /** Creates a new LEDStrip. */
   public LEDStrip(int pwmPort, int length) {
@@ -43,35 +42,24 @@ public class LEDStrip extends SubsystemBase {
     m_ledBuffer = new AddressableLEDBuffer(length);
     m_bottom = m_ledBuffer.createView(0, length/2-1);
     m_top = m_ledBuffer.createView(length/2, length-1).reversed();
-    //m_gradient.breathe(Seconds.of(1)).applyTo(m_top);
-    //m_gradient.breathe(Seconds.of(1)).applyTo(m_bottom);
-    //Distance ledSpacing = Inches.of(3.0 / 9.0);
-    // LEDPattern pattern = base.scrollAtRelativeSpeed(Percent.per(Second).of(25));
     m_ledStrip.start();
-    m_allBlue.applyTo(m_ledBuffer);
-    m_ledStrip.setData(m_ledBuffer);
-    //setDefaultCommand(scrollFromCenter());
-    setDefaultCommand(breath());
-    System.out.println("Started LEDStrip: length=" + length + ", pwmPort=" + pwmPort);
+    setDefaultCommand(defaultCommand());
   }
-
-  //@Override
-  //public void initSendable(SendableBuilder builder) {
-  //  super.initSendable(builder);
-  //  builder.addDoubleProperty("Blink Timer", () -> m_timer.get(), null);
-  //}
   
-  /**
-   * set all leds to dark.
-   */
-  public void turnAllOff(){
-    m_allOff.applyTo(m_ledBuffer);
-    m_ledStrip.setData(m_ledBuffer);
-  }
- 
-  
+/**
+ * periodic() does nothing: all repeated behavior is done via commands 
+ **/  
   @Override
   public void periodic() {}
+
+  public Command defaultCommand() {
+    return new InstantCommand(() ->
+    {
+      m_allBlue.applyTo(m_ledBuffer);
+      m_ledStrip.setData(m_ledBuffer);
+    },
+    this).withName("Default Command");
+  }
 
   public Command scrollFromCenter() {
     return new RunCommand(() ->
@@ -81,14 +69,31 @@ public class LEDStrip extends SubsystemBase {
         m_ledStrip.setData(m_ledBuffer);
       },
       this
-    );
+    ).withName("Scroll Out From Center");
   }
   public Command breath(){
     return new RunCommand(() ->
     {
-      m_allBlue.breathe(Seconds.of(1.0)).applyTo(m_ledBuffer);
+      m_allBlue.breathe(Seconds.of(2.5)).applyTo(m_ledBuffer);
       m_ledStrip.setData(m_ledBuffer);
     },
-    this);
+    this).withName("breath");
+  }
+  /**
+   * Scroll a sequence of colors
+   * @param positionColorMap - Map.of(startingPosition0,color0, startingPosition1,color1, ...)
+   *   where starting positions are increasing numbers between 0 (start of LED strip) and 1 (end
+   *   of LED strip)
+   * @param inchesPerSecond - speed of scrolling.  E.g., Inches.per(Second).of(2.0).
+   * @return - a command that will scroll that pattern at given speed
+   */
+  public Command scrollSteps(Map<Double,Color> positionColorMap, LinearVelocity inchesPerSecond) {
+    LEDPattern pattern = LEDPattern.steps(positionColorMap).scrollAtAbsoluteSpeed(inchesPerSecond, m_ledSpacing);
+    return new RunCommand(() ->
+    {
+      pattern.applyTo(m_ledBuffer);
+      m_ledStrip.setData(m_ledBuffer);
+    },
+    this).withName("Scroll Steps");
   }
 }

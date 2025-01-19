@@ -73,6 +73,10 @@ public class LEDStrip extends SubsystemBase {
     }
   }
 
+  public Writer createWriter(ViewDatum... viewData){
+    return new Writer(viewData);
+  }
+
   public class Writer extends SubsystemBase {
     private AddressableLEDBuffer m_ledBuffer;
     private ArrayList<AddressableLEDBufferView> m_views = new ArrayList<>();
@@ -83,15 +87,16 @@ public class LEDStrip extends SubsystemBase {
      * index, length and whether a pattern should be reversed for each segment. 
      * If no viewData arguments are given, the view will be of the entire LED strip.
      */
+
     public Writer(LEDStrip.ViewDatum... viewData){
       m_ledBuffer = getLedBuffer();
       AddressableLEDBufferView view;
-      System.out.println("### getLength() -> " + getLength());
+      // System.out.println("### getLength() -> " + getLength());
       if (viewData.length == 0) {
-        m_views.add(m_ledBuffer.createView(0, (getLength()-1)));
+        m_views.add(m_ledBuffer.createView(0, getLength()-1));
       } else {
         for (ViewDatum viewDatum : viewData) {
-          System.out.println("### from " + viewDatum.m_startingIndex + " to " + viewDatum.m_endingIndex);
+          //System.out.println("### from " + viewDatum.m_startingIndex + " to " + viewDatum.m_endingIndex);
           if (viewDatum.m_reversed){
             view = m_ledBuffer.createView(viewDatum.m_startingIndex, viewDatum.m_endingIndex).reversed();
           } else {
@@ -103,9 +108,9 @@ public class LEDStrip extends SubsystemBase {
       LEDPattern defaultPattern = LEDPattern.solid(Color.kBlack);
       setDefaultCommand(new InstantCommand(() -> apply(defaultPattern), this));
     }
-    public Writer(){
-      this(new LEDStrip.ViewDatum(0, getLength(), false));
-    }
+    //public Writer(){
+    //  this(new LEDStrip.ViewDatum(0, getLength(), false));
+    //}
     /**
      * Apply the LED pattern to all the views in this LEDWriter.
      * @param ledPattern - the pattern to apply

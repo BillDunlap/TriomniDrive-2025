@@ -43,15 +43,16 @@ public class RobotContainer {
   private final XboxController m_controller = new XboxController(0);
   private final ControllerRumbler m_rumbler = new ControllerRumbler(m_controller);
   private final DriveTrain m_driveTrain = new DriveTrain();
-  private final LEDStrip m_ledStrip = new LEDStrip(9, 10);
+  private final LEDStrip m_ledStrip = new LEDStrip(9, 60);
   //private final LEDStrip.Writer m_ledWriterAll = m_ledStrip.new Writer();
-  private final LEDStrip.Writer m_ledWriter_4_and_9 = m_ledStrip.new Writer(
-    new LEDStrip.ViewDatum(4, 4, false),
-    new LEDStrip.ViewDatum(9, 9, false)
+  private final LEDStrip.Writer m_ledWriter_4_and_9 = m_ledStrip.createWriter(
+    new LEDStrip.ViewDatum(20, 20, false),
+    new LEDStrip.ViewDatum(45, 45, false)
   );
-  private final LEDStrip.Writer m_ledWriter_not_4_or_9 = m_ledStrip.new Writer(
-    new LEDStrip.ViewDatum(0, 3, false), 
-    new LEDStrip.ViewDatum(5, 8, true)
+  private final LEDStrip.Writer m_ledWriter_not_4_or_9 = m_ledStrip.createWriter(
+    new LEDStrip.ViewDatum(0, 19, false), 
+    new LEDStrip.ViewDatum(21, 44, true),
+    new LEDStrip.ViewDatum(46, 59, false)
   );
   private final ApriltagInfo m_apriltagInfo = new ApriltagInfo(4173, "rPi", new int[]{1, 2, 3, 4, 5, 6, 7, 8});
   // private final BrushlessSparkMax m_BrushlessSparkMax = new BrushlessSparkMax(58);

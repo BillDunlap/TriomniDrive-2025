@@ -31,9 +31,7 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
     // autonomous chooser on the dashboard.
-    System.out.println("*** Starting robotInit");
     m_robotContainer = new RobotContainer();
-    System.out.println("*** Finishing robotInit");
     DataLogManager.start();
     DriverStation.startDataLog(DataLogManager.getLog());
     URCL.start(); // Log info from REV devices on the CAN bus

@@ -17,6 +17,7 @@ import java.util.Map;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.units.measure.Time;
+import edu.wpi.first.util.sendable.SendableBuilder;
 //import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
@@ -25,23 +26,50 @@ import edu.wpi.first.wpilibj.LEDPattern;
 import edu.wpi.first.wpilibj.util.Color;
 
 public class LEDStrip extends SubsystemBase {
-  private AddressableLED m_ledStrip;
-  private int m_length;
-  private AddressableLEDBuffer m_ledBuffer;
-  private Distance m_ledSpacing = Inches.of(3.0 / 9.0); // should be settable
+  private final AddressableLED m_ledStrip;
+  private final int m_length;
+  private final AddressableLEDBuffer m_ledBuffer;
+  private Distance m_ledSpacing;
 
-  /** Creates a new LEDStrip. */
+  /**
+   * Creates a new LEDStrip object.  Default ledSpacing is 1/3 of an inch.
+   * @param pwmPort - the numer of the PWN port on the Roborio that the strip's
+   * signal wire is attached to.
+   * @param length - the number of LEDs in the strip.
+   */
   public LEDStrip(int pwmPort, int length) {
+    this(pwmPort, length, Inches.of(3.0 / 9.0));
+  }
+  /**
+  * Creates a new LEDStrip object.  Default ledSpacing is 1/3 of an inch.
+  * @param pwmPort - the numer of the PWN port on the Roborio that the strip's
+  * signal wire is attached to.
+  * @param length - the number of LEDs in the strip.
+  * @param ledSpacing - the distance between the LEDs in the strip.
+  */
+  public LEDStrip(int pwmPort, int length, Distance ledSpacing){
     m_length = length;
     m_ledStrip = new AddressableLED(pwmPort);
     m_ledStrip.setLength(m_length);
     m_ledBuffer = new AddressableLEDBuffer(m_length);
     m_ledStrip.start();
+
+    m_ledSpacing = ledSpacing;
   }
   
   @Override
   public void periodic() {
+    /* Send current data to the LED strip.  This really only
+     * needs to be done if the data has changed, but we currently
+     * do not insist that the writers set a flag saying if
+     * they change the data.
+     */
     m_ledStrip.setData(m_ledBuffer);
+  }
+
+  @Override
+  public void initSendable(SendableBuilder builder) {
+      super.initSendable(builder); // add .hasDefault, .default, .hasCommand, and .command properties
   }
 
   private AddressableLEDBuffer getLedBuffer() {
@@ -61,7 +89,8 @@ public class LEDStrip extends SubsystemBase {
     public int m_endingIndex;
     public boolean m_reversed;
     /**
-     * Describe a view into one segement of an LED strip
+     * Describe a view into one segment of an LED strip.  A Writer contains
+     * any number of such views.
      * @param startingIndex - the starting index of the segment (start at 0)
      * @param endingIndex - the ending index (inclusive) of the segment
      * @param reversed - should a pattern be reversed when applied to this segment?
@@ -73,6 +102,13 @@ public class LEDStrip extends SubsystemBase {
     }
   }
 
+  /**
+   * A LEDStrip.Writer lets you apply the same pattern to multiple segments of a
+   * strips of LEDs.
+   * @param viewData - zero or more LEDString.viewData objects giving the starting
+   * index, length and whether a pattern should be reversed for each segment. 
+   * If no viewData arguments are given, the view will be of the entire LED strip.
+   */
   public Writer createWriter(ViewDatum... viewData){
     return new Writer(viewData);
   }
@@ -86,6 +122,7 @@ public class LEDStrip extends SubsystemBase {
      * @param viewData - zero or more LEDString.viewData objects giving the starting
      * index, length and whether a pattern should be reversed for each segment. 
      * If no viewData arguments are given, the view will be of the entire LED strip.
+     * (LedStrip.createWriter() is a more convenient way to use this constructor.)
      */
 
     public Writer(LEDStrip.ViewDatum... viewData){
@@ -108,11 +145,10 @@ public class LEDStrip extends SubsystemBase {
       LEDPattern defaultPattern = LEDPattern.solid(Color.kBlack);
       setDefaultCommand(new InstantCommand(() -> apply(defaultPattern), this));
     }
-    //public Writer(){
-    //  this(new LEDStrip.ViewDatum(0, getLength(), false));
-    //}
+
     /**
-     * Apply the LED pattern to all the views in this LEDWriter.
+     * Apply the LED pattern to all the views in this LEDWriter.  This should
+     * be used by all commands to a LEDStrip.Writer.
      * @param ledPattern - the pattern to apply
      */
     public void apply(LEDPattern ledPattern){
@@ -121,6 +157,11 @@ public class LEDStrip extends SubsystemBase {
       }
     }
 
+    /* The following command factory methods are mainly intended to be examples
+     * of how to use a Writer.  You might want to put things like this in a
+     * new class with methods like Alarm or Warning or in a Collector class with
+     * a method called GamePieceInCollector.
+     */
     /**
      * Cycle brightness of LEDs
      * @param color - the color of all the LEDs
@@ -128,11 +169,8 @@ public class LEDStrip extends SubsystemBase {
      * @return - a command to do the "breathing"
      */
     public Command breathe(Color color, Time period){
-      System.out.println("breathe");
       LEDPattern pattern = LEDPattern.solid(color).breathe(period);
-      return new RunCommand(
-        () -> apply(pattern),
-        this).withName("breathe");
+      return new RunCommand(() -> apply(pattern), this).withName("Breathe");
     }
     /**
       * Scroll a sequence of colors
@@ -143,13 +181,8 @@ public class LEDStrip extends SubsystemBase {
       * @return - a command that will scroll that pattern at given speed
       */
     public Command scrollSteps(Map<Double,Color> positionColorMap, LinearVelocity inchesPerSecond) {
-      System.out.println("scroll steps");
       LEDPattern pattern = LEDPattern.steps(positionColorMap).scrollAtAbsoluteSpeed(inchesPerSecond, getLedSpacing());
-      return new RunCommand(() ->
-      {
-        apply(pattern);
-      },
-      this).withName("Scroll Steps");
+      return new RunCommand(() -> apply(pattern), this).withName("Scroll Steps");
     }
   }
 }

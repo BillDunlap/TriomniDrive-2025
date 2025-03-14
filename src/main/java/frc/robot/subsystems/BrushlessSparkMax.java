@@ -28,7 +28,7 @@ public class BrushlessSparkMax extends SubsystemBase {
     if (!error.equals(REVLibError.kOk)) {
       DataLogManager.log("Error configuring SparkMax " + canId + ": " + error);
     }
-    m_SparkMax.set(+0.15);
+    m_SparkMax.set(0.0);
   }
 
   @Override

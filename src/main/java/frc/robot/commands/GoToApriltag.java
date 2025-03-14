@@ -4,6 +4,7 @@
 
 package frc.robot.commands;
 
+import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.DriveTrain;
 import frc.robot.subsystems.ApriltagInfo;
@@ -59,13 +60,17 @@ public class GoToApriltag extends Command {
   private double m_desiredDistanceFromTarget = 0.66; // meters, c. 2 feet
   private double m_distanceTolerance = 0.05; // c. 2 inches
   private double m_angularTolerance = 0.1; // c. +-5.7 degrees
+  private final double m_debounceTime = 0.25; 
+  private Debouncer m_Debouncer = new Debouncer(m_debounceTime);
   private boolean isDone(ApriltagInfo.ApriltagRecord record) {
     // TODO: use Vector2D 
-    return record.m_seen && 
-    Math.abs(record.getDistance() - m_desiredDistanceFromTarget) <= m_distanceTolerance &&
-    // positive pitch means we are to apriltag's right
-    Math.abs(record.getPitch() - 0.0) <= m_angularTolerance &&
-    Math.abs(record.getFrameX()) <= 0.05 ;
+    boolean closeEnough = record.m_seen
+      && Math.abs(record.getDistance() - m_desiredDistanceFromTarget) <= m_distanceTolerance
+      // positive pitch means we are to apriltag's right
+      && Math.abs(record.getPitch() - 0.0) <= m_angularTolerance
+      && Math.abs(record.getFrameX()) <= 0.05
+      ;
+    return m_Debouncer.calculate(closeEnough);
   }
 
   private void setState(State state){
